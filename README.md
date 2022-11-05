@@ -3,6 +3,7 @@ A bash script that quantifies .bam files using .bed intervals and outputs result
 
 ## Usage
 *Requires samtools version 1.10 or above.*
+
 Execute the script with the following commands (in order)
 1) Path to the directory containing bam files, requires indexing;
 2) Path to BED file containing coordinates of regions of interest, requires 4 columns (chr start end name);

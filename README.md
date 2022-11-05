@@ -25,4 +25,4 @@ The remainder columns will contain the number of counts within each given region
 If the objective is to calculate reads per million from each .bed region, divide counts from each region to read_count from each file.
 
 ## Credits
-Written by Luis Abatti <abatti.luis@gmail.com>, based on Linh Huynh's original script
+Written by Luis Abatti, based on Linh Huynh's original script

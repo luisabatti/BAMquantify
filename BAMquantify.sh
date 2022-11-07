@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ###
-#Written by Luis Abatti <abatti.luis@gmail.com>, based on Linh Huynh's original script
+#Written by Luis Abatti, based on Linh Huynh's original script
 
 # Function: Quantifies .bam files using .bed intervals and outputs results into a .csv table.
 # Requirements

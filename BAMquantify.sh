@@ -2,7 +2,7 @@
 ###
 #Written by Luis Abatti <abatti.luis@gmail.com>, based on Linh Huynh's original script
 
-# Function: Count reads at specific loci from .bed file for each bam file in the input directory (the first parameter below). Counts are then summarized into final_quantification.csv.
+# Function: Quantifies .bam files using .bed intervals and outputs results into a .csv table.
 # Requirements
 #    1. samtools version 1.10 or later
 # Parameters
@@ -18,6 +18,7 @@ if ! [ -x "$(command -v samtools)" ]; then
   echo 'Error: samtools is not installed.' >&2
   exit 1
 fi
+# Checks if samtools is installed
 
 ORIGIN_BAM_PATH=$1
 
@@ -30,6 +31,8 @@ elif [[ -f "${ORIGIN_BAM_PATH}" ]]; then
 elif [[ -d "${ORIGIN_BAM_PATH}" ]]; then
     echo "Quantifying BAM files from ${ORIGIN_BAM_PATH}"
 fi
+
+#Checks if directory to .bam files exist
 
 BED_FILE=$2
 
@@ -46,6 +49,8 @@ elif [[ -f "${BED_FILE}" ]]; then
     echo "Quantifying loci from ${BED_FILE}"
 fi
 
+#Checks if .bed file exists
+
 MODE=${3:-PE}
 
 if [ "${MODE}" == "PE" ]
@@ -59,34 +64,39 @@ else
   exit 1
 fi
 
+#Set running mode to either SE or PE (PE is default)
 
 chr_array=( $(awk '{print $1}' "${BED_FILE}" | sed -e 's/\r//g') )
 start_array=( $(awk '{print $2}' "${BED_FILE}" | sed -e 's/\r//g') )
 end_array=( $(awk '{print $3}' "${BED_FILE}" | sed -e 's/\r//g') )
 name_array=( $(awk '{print $4}' "${BED_FILE}" | sed -e 's/\r//g') )
-#sed removes the carriage return character
+#Divides .bed file into 4 arrays (chromosome, start, end, name). Sed removes the carriage return character
 
 if [[ -z "${name_array}" ]]; then
   echo "${BED_FILE} does not contain a name column!" 1>&2
   exit 1
 fi
 
-OUTPUT_BAM_PATH="${ORIGIN_BAM_PATH}/Output_bam_files"
+#Checks if name column exists, it is required since it will name the columns in the output file
+
+OUTPUT_BAM_PATH="${ORIGIN_BAM_PATH}/tmp"
 
 if [[ ! -d "${OUTPUT_BAM_PATH}" ]]; then
   mkdir "${OUTPUT_BAM_PATH}"
 fi
 
+#Creates a temporary output folder to save sliced .bam files
+
 output_file_list=""
 
 for index in ${!name_array[*]}
-#return the list of all array indices (0, 1, 2, 3...) then uses it to grab the position of each coordinate
+#return the list of all array indices (0, 1, 2, 3...) then uses it to grab the position of each region
   do
     out_name="${name_array[$index]}"
     output_bam_dir="${OUTPUT_BAM_PATH}/${out_name}"
     if [[ ! -d "${output_bam_dir}" ]]; then
       mkdir "${output_bam_dir}"
-      #Makes directory if it doesn't exist
+      #Creates a temporary folder to process each region
     fi
     pos="${index}"
     chr_pos="${chr_array[$pos]}"
@@ -109,9 +119,9 @@ for index in ${!name_array[*]}
     do
       [[ -e "${bam_file}" ]] || break
       echo "Processing ${bam_file}"
-      # remove the path
+      # Removes the path for each .bam file and only keep the name
       tmp="${bam_file##*/}"
-      # remove .bam
+      # remove .bam extension
       filename="${tmp%%.bam}"
       bai_filename="${ORIGIN_BAM_PATH}/${filename}.bam.bai"
       output_bam_filename="${output_bam_dir}/${filename}.bam"
@@ -122,6 +132,7 @@ for index in ${!name_array[*]}
         samtools index "${bam_file}" "${bai_filename}"
       fi
       if [ "${MODE}" == "PE" ]
+        #If PE mode, it will use samtools with flag -f 2
         then
           samtools view -X -h "${bam_file}" "${bai_filename}" "${chr_pos}:${start_pos}-${end_pos}" > "${output_bam_filename}"
           read_num=$(samtools view -c -f 2 -q 10 "${output_bam_filename}")
